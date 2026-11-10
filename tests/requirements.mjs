@@ -25,10 +25,15 @@ assert.ok(html.indexOf('id="editCard"') < html.indexOf('id="figureCatalog"'), 'E
 assert.match(js, /addEventListener\('dblclick'/, 'Editar el nombre con doble clic');
 assert.match(html, /id="questionsPanel" class="questions-panel professional-only"/, 'Preguntas exclusivas de la interfaz profesional');
 assert.match(js, /textPath href="#arc-/, 'Los nombres siguen sus franjas circulares');
-assert.match(html, /app\.js\?v=20261110-r3/, 'Se fuerza versión del JS');
+assert.match(html, /app\.js\?v=20261110-r4/, 'Se fuerza versión del JS');
 assert.match(css, /board-surface\{margin:0;width:100%;max-width:none/, 'Círculos ocupan el ancho del tablero');
 assert.match(html, /id="exportPngButton"/, 'Exportar PNG');
 assert.match(html, /id="exportPdfButton"/, 'Exportar PDF');
 assert.match(js, /function pdfFromCanvas\(canvas\)/, 'Generación de PDF local');
 assert.match(js, /function downloadPng\(\)/, 'Generación de PNG local');
-console.log('OK: seis círculos anchos, centro blanco, 30 muñecos y edición compartida.');
+assert.match(html, /id="addOutsideFigure"/, 'Botón de añadir fuera');
+assert.match(html, /id="figureZone"/, 'Posición de cada muñeco visible en editor');
+assert.match(js, /function figureOutside\(\)/, 'Se calculan lugares fuera de los círculos');
+assert.match(js, /return circleFor\(f\.x, f\.y\)/, 'Muñecos fuera no se clasifican como Seguridad');
+assert.doesNotMatch(js, /if\(index<0\)return;/, 'Soltar fuera no está bloqueado');
+console.log('OK: seis círculos anchos, 30 muñecos, edición compartida y colocación fuera de los círculos.');
