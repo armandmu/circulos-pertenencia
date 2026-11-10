@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="theme-color" content="#f8f7fc"/>
+  <meta name="description" content="Círculos de pertenencia: ejercicio visual de exploración de vínculos para psicoterapia."/>
+  <title>Círculos de pertenencia · Ángel Rull</title>
+  <link rel="stylesheet" href="./styles.css"/>
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-brand"><span class="brand-monogram">AR</span><span><strong>ÁNGEL RULL</strong><small>PSICOLOGÍA · HERRAMIENTAS TERAPÉUTICAS</small></span></div>
+    <span class="site-badge">Ejercicio interactivo</span>
+  </header>
+  <main>
+    <section id="landing" class="landing">
+      <div class="landing-intro">
+        <span class="eyebrow">UN MAPA DE TUS VÍNCULOS</span>
+        <h1>Círculos de <em>pertenencia</em></h1>
+        <p>Un espacio visual para explorar qué lugar ocupan las personas de tu vida. Coloca figuras en los círculos según lo que cada vínculo significa para ti.</p>
+      </div>
+      <div class="entry-grid">
+        <form id="therapistForm" class="entry-card">
+          <span class="entry-eyebrow">ACCESO PROFESIONAL</span>
+          <h2>Psicólogo</h2>
+          <p>Crea una sesión, comparte un enlace y acompaña el ejercicio con preguntas de exploración.</p>
+          <label>Correo electrónico <input id="therapistEmail" type="email" autocomplete="username" required placeholder="tu@email.com"></label>
+          <label>Contraseña <input id="therapistPassword" type="password" autocomplete="current-password" required placeholder="Contraseña"></label>
+          <button class="button primary" id="createSession" type="submit">Crear sesión <span aria-hidden="true">↗</span></button>
+        </form>
+        <form id="patientForm" class="entry-card patient-card">
+          <span class="entry-eyebrow">ACCESO DEL PACIENTE</span>
+          <h2>Paciente</h2>
+          <p>Introduce el código que te ha facilitado tu psicólogo para empezar a colocar las figuras.</p>
+          <label>Código de la sesión <input id="patientCode" type="text" autocomplete="off" autocapitalize="characters" required placeholder="Código de acceso"></label>
+          <button class="button primary" id="joinSession" type="submit">Entrar en el ejercicio <span aria-hidden="true">↗</span></button>
+        </form>
+      </div>
+      <p id="landingError" class="error" role="alert" hidden></p>
+      <p class="privacy-note">Para cuidar la privacidad, utiliza apodos o referencias como «madre», «amigo» o «pareja». Evita introducir nombres completos y otros datos identificativos.</p>
+    </section>
+
+    <section id="workspace" class="workspace" hidden>
+      <div class="workspace-head">
+        <div>
+          <span class="eyebrow" id="roleLabel">SESIÓN EN DIRECTO</span>
+          <h1>Círculos de pertenencia</h1>
+          <p id="workspaceSub">Explora tus vínculos, a tu ritmo.</p>
+        </div>
+        <div class="workspace-actions">
+          <span id="connectionStatus" class="status">Conectando…</span>
+          <button type="button" id="shareButton" class="button secondary professional-only">Copiar enlace del paciente</button>
+          <button type="button" id="exportButton" class="button secondary professional-only">Guardar imagen SVG</button>
+          <button type="button" id="exitButton" class="button ghost">Salir</button>
+        </div>
+      </div>
+      <div id="workspaceError" class="error" role="alert" hidden></div>
+      <div class="workspace-layout">
+        <section class="board-card">
+          <div class="board-top">
+            <span><span class="mini-dot"></span> MAPA DE PERTENENCIA</span>
+            <span id="boardHelper">Selecciona un círculo para empezar</span>
+          </div>
+          <div class="board-surface">
+            <svg id="circleBoard" viewBox="0 0 760 760" aria-label="Seis círculos concéntricos de pertenencia, con figuras movibles"></svg>
+          </div>
+          <div class="board-foot"><span id="boardCount">0 figuras colocadas</span><span>Centro blanco · «Yo»</span></div>
+        </section>
+
+        <aside class="sidebar">
+          <section class="side-card active-circle-card">
+            <span class="eyebrow">CÍRCULO SELECCIONADO</span>
+            <div class="circle-name"><span id="circleSwatch" class="circle-swatch"></span><h2 id="circleTitle">Seguridad</h2></div>
+            <p id="circleHint">Haz clic en un círculo para seleccionarlo.</p>
+            <button id="infoButton" type="button" class="button primary professional-only">ⓘ Ver preguntas</button>
+            <div id="questionsPanel" class="questions-panel professional-only" hidden>
+              <h3>Preguntas para explorar</h3>
+              <p class="question-note">Guía flexible para la entrevista; no implica una interpretación automática.</p>
+              <ol id="questionList"></ol>
+            </div>
+          </section>
+
+          <section class="side-card patient-only">
+            <span class="eyebrow">PERSONAS DE TU VIDA</span>
+            <h2>Elige una figura</h2>
+            <p class="side-description">Selecciona un muñeco, escribe cómo quieres identificar a esa persona y añádelo al círculo elegido. También puedes arrastrarlo directamente al mapa.</p>
+            <div id="figureCatalog" class="figure-catalog" aria-label="Catálogo de figuras"></div>
+            <label class="field-label">¿Cómo quieres llamarla?<input id="newFigureName" type="text" maxlength="30" placeholder="Ej.: madre, compañero, amiga…"></label>
+            <button id="addFigure" type="button" class="button primary wide">Añadir al círculo seleccionado</button>
+            <p class="microcopy">Después puedes arrastrar la figura a otro círculo.</p>
+          </section>
+
+          <section id="editCard" class="side-card patient-only" hidden>
+            <span class="eyebrow">FIGURA SELECCIONADA</span>
+            <h2>Editar persona</h2>
+            <label class="field-label">Nombre o referencia<input id="editFigureName" type="text" maxlength="30"></label>
+            <div class="inline-buttons"><button id="saveFigureName" type="button" class="button secondary">Guardar nombre</button><button id="removeFigure" type="button" class="button danger">Retirar figura</button></div>
+          </section>
+          <section class="side-card help-card">
+            <span class="eyebrow">CÓMO USARLO</span>
+            <p class="side-description patient-only">Los círculos representan distintas experiencias en las relaciones. No hay respuestas correctas. Coloca cada persona donde sientas que encaja.</p>
+            <p class="side-description professional-only">Haz clic en cualquiera de las franjas y después en «Ver preguntas». Las preguntas aparecen en tu pantalla, no en la del paciente.</p>
+            <p class="side-description"><strong>Los círculos no son una clasificación diagnóstica.</strong> Son una propuesta de exploración y diálogo.</p>
+          </section>
+        </aside>
+      </div>
+    </section>
+  </main>
+  <footer class="site-footer">Ángel Rull · Psicología online <a href="https://angelrull.com" target="_blank" rel="noopener noreferrer">angelrull.com</a></footer>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
