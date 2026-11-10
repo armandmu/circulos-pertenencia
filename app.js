@@ -119,8 +119,8 @@ function circleFor(x,y){
   return RINGS.findIndex(r => d > r.inner && d <= r.outer);
 }
 function circleIndexForFigure(f){
-  const c = circleFor(f.x, f.y);
-  return c >= 0 ? c : 0;
+  // -1: no está en ninguno de los seis círculos.
+  return circleFor(f.x, f.y);
 }
 function svgPoint(e){
   const point = board.createSVGPoint();
@@ -132,12 +132,29 @@ function svgPoint(e){
   return {x:local.x,y:local.y};
 }
 function constrain(x,y){
-  let dx = x-CX, dy=y-CY;
-  let distance = Math.hypot(dx,dy);
-  if(distance < .01){ dx=0; dy=-1; distance=1; }
-  const final = clamp(distance, CENTER_RADIUS+8, RINGS[0].outer-6);
-  return { x: +(CX + dx / distance * final).toFixed(1),
-    y: +(CY + dy / distance * final).toFixed(1) };
+  // Se permite toda la superficie cuadrada, incluidas las esquinas exteriores.
+  // Dejamos un margen para que las figuras y sus nombres no salgan del SVG.
+  const margin=78;
+  return {
+    x:+clamp(x,margin,1040-margin).toFixed(1),
+    y:+clamp(y,margin,1040-margin).toFixed(1)
+  };
+}
+function figureOutside(){
+  // Elige un hueco libre de las cuatro esquinas y márgenes exteriores.
+  // Los muñecos colocados ahí no se atribuyen a ninguno de los seis círculos.
+  let best=null, bestScore=-Infinity;
+  for(let y=110;y<=930;y+=75){
+    for(let x=110;x<=930;x+=75){
+      const radius=Math.hypot(x-CX,y-CY);
+      if(radius<RINGS[0].outer+28)continue;
+      const closest=state.board.figures.reduce(
+        (dist,f)=>Math.min(dist,Math.hypot(x-f.x,y-f.y)),999);
+      const score=closest+radius*.015;
+      if(score>bestScore){bestScore=score;best={x,y};}
+    }
+  }
+  return best||{x:120,y:120};
 }
 function figureAtRing(index){
   const ring = RINGS[index];
@@ -177,7 +194,9 @@ function renderRing(){
     $('questionsPanel').hidden=true;
     $('infoButton').textContent='ⓘ Ver preguntas';
   }
-  $('boardHelper').textContent = state.role==='therapist' ? 'Selecciona un círculo y pulsa «Ver preguntas»' : 'Arrastra las figuras de un círculo a otro';
+  $('boardHelper').textContent = state.role==='therapist'
+    ? 'Arrastra los muñecos dentro o fuera de los círculos · «Ver preguntas»'
+    : 'Coloca los muñecos dentro o fuera de los círculos';
 }
 function selectRing(index){
   if(index<0 || index>=RINGS.length)return;
@@ -194,6 +213,7 @@ function renderCatalog(){
   $('figureCatalog').innerHTML = TEMPLATES.map(t=>'<button type="button" class="catalog-button" data-template="'+t.id+'" draggable="'+(!used.has(t.id))+'" '+(used.has(t.id)?'disabled ':'')+'aria-pressed="'+(state.selectedTemplate===t.id)+'" title="Figura '+t.id+' · '+({pequeno:'pequeña',mediano:'mediana',grande:'grande'})[t.size]+'"><svg aria-hidden="true" viewBox="0 0 80 114">'+figurineArt(t)+'</svg></button>').join('');
   const available=used.size < TEMPLATES.length;
   $('addFigure').disabled= !available || !state.selectedTemplate;
+  $('addOutsideFigure').disabled= !available || !state.selectedTemplate;
   $('addFigure').textContent=available ? 'Añadir al círculo seleccionado' : 'Has colocado todas las figuras';
 }
 function renderFigures(){
@@ -206,7 +226,9 @@ function renderFigures(){
       '<rect class="person-outline" x="2" y="-4" width="76" height="115" rx="25"/>'+figurineArt(t, f.direction || 'frente')+
       '</g><text data-uid="'+xml(f.uid)+'" x="'+x+'" y="'+(y+60*scale+15)+'" class="person-label" text-anchor="middle">'+xml(f.name||'Persona')+'</text>';
   }).join('');
-  $('boardCount').textContent=state.board.figures.length+' figura'+(state.board.figures.length===1?' colocada':'s colocadas');
+  const outside=state.board.figures.filter(f=>Math.hypot(f.x-CX,f.y-CY)>RINGS[0].outer).length;
+  $('boardCount').textContent=state.board.figures.length+' figura'+(state.board.figures.length===1?' colocada':'s colocadas')+
+    (outside?' · '+outside+' fuera de los círculos':'');
   renderCatalog();
   renderEditor();
 }
@@ -214,6 +236,12 @@ function renderEditor(){
   const item=state.board.figures.find(f=>f.uid===state.selectedUid);
   $('editCard').hidden=!canEditFigures()||!item;
   if(!item){state.editMode=false;return;}
+  const radius=Math.hypot(item.x-CX,item.y-CY);
+  const ring=circleIndexForFigure(item);
+  $('figureZone').textContent=ring>=0
+    ? 'Ubicación: '+RINGS[ring].name
+    : (radius>RINGS[0].outer?'Ubicación: fuera de los círculos · sin pertenencia asignada':
+        'Ubicación: centro blanco · sin círculo asignado');
   if(!state.editMode) $('editFigureName').value=item.name||'';
 }
 function refreshWorkspace(){
@@ -513,7 +541,8 @@ function onBoardPointerDown(event){
   if(!item)return;
   state.selectedUid=uid;
   state.editMode=false;
-  selectRing(circleIndexForFigure(item));
+  const ringIndex=circleIndexForFigure(item);
+  if(ringIndex>=0)selectRing(ringIndex);
   const from=svgPoint(event);
   state.dragging={uid,pointer:event.pointerId,startX:from.x,startY:from.y,x:item.x,y:item.y,moved:false};
   board.setPointerCapture(event.pointerId);
@@ -538,7 +567,10 @@ function onBoardPointerUp(event){
   state.dragging=null;
   if(drag.moved){
     const item=state.board.figures.find(f=>f.uid===drag.uid);
-    if(item)selectRing(circleIndexForFigure(item));
+    if(item){
+      const ringIndex=circleIndexForFigure(item);
+      if(ringIndex>=0)selectRing(ringIndex);
+    }
     changeBoard({...state.board});
   } else renderFigures();
 }
@@ -583,7 +615,8 @@ function initializeEvents(){
       const item=state.board.figures.find(f=>f.uid===el.dataset.uid);
       if(!item)return;
       state.selectedUid=item.uid;
-      selectRing(circleIndexForFigure(item));
+      const ringIndex=circleIndexForFigure(item);
+      if(ringIndex>=0)selectRing(ringIndex);
       renderFigures();
     }
   });
@@ -597,8 +630,7 @@ function initializeEvents(){
     if(!TEMPLATES.some(t=>t.id===id))return;
     const point=svgPoint(e);
     const index=circleFor(point.x,point.y);
-    if(index<0)return;
-    selectRing(index);
+    if(index>=0)selectRing(index);
     addFigure(id,point,index);
   });
   $('figureCatalog').addEventListener('click',e=>{
@@ -615,6 +647,7 @@ function initializeEvents(){
     e.dataTransfer.effectAllowed='copy';
   });
   $('addFigure').addEventListener('click',()=>addFigure(state.selectedTemplate));
+  $('addOutsideFigure').addEventListener('click',()=>addFigure(state.selectedTemplate,figureOutside()));
   $('saveFigureName').addEventListener('click',()=>{
     const uid=state.selectedUid;
     if(!uid)return;
