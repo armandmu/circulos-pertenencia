@@ -6,9 +6,9 @@ Aplicación web independiente para ejercicios de exploración relacional en psic
 
 ## Uso
 
-El psicólogo inicia sesión con su cuenta profesional y crea una sesión. Comparte el enlace con código. El paciente elige figuras de un catálogo de 18 modelos, puede escribir un apodo o tipo de relación y colocarlas en una franja. Se pueden arrastrar dentro del mapa, mover a otro círculo, cambiar el nombre y retirarlas.
+El psicólogo inicia sesión con su cuenta profesional y crea una sesión. Comparte el enlace con código. El psicólogo y el paciente eligen figuras de un catálogo de 30 modelos, puede escribir un apodo o tipo de relación y colocarlas en una franja. Ambos participantes pueden arrastrarlas dentro del mapa, moverlas a otro círculo, cambiar el nombre después de colocarlas y retirarlas.
 
-Los nombres de las seis franjas están escritos **siguiendo la circunferencia de cada círculo, dentro del propio círculo**, mediante SVG textPath. Del exterior al centro: Seguridad (morado), Desarrollo (azul), Justicia (rojo), Reconocimiento (verde), Pertenencia (naranja), Plenitud (amarillo), y centro blanco «Yo».
+Los nombres de las seis franjas están escritos **siguiendo la circunferencia de cada círculo, dentro del propio círculo**, mediante SVG textPath. Del exterior al centro: Seguridad (morado), Desarrollo (azul), Justicia (rojo), Reconocimiento (verde), Pertenencia (naranja), Plenitud (amarillo), y centro blanco sin texto.
 
 El psicólogo selecciona un círculo y pulsa **ⓘ Ver preguntas**: aparecen exclusivamente en su interfaz cinco preguntas de evaluación relativas a ese círculo, tomadas del documento proporcionado.
 
