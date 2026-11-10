@@ -71,21 +71,10 @@ assert.equal(stored.board.figures[0].name,'Mamá','Se puede cambiar el nombre');
 assert.equal(professional.document.getElementById('infoButton').hidden,false,'El profesional ve preguntas');
 await click(professional,'infoButton');
 assert.equal(professional.document.getElementById('questionsPanel').hidden,false,'El panel de preguntas se abre');
-const patient=boot();
-patient.document.getElementById('patientCode').value='ABC123';
-await form(patient,'patientForm');
-assert.equal(patient.document.getElementById('workspace').hidden,false,'El paciente entra');
-assert.equal(patient.document.getElementById('questionsPanel').hidden,true,'Las preguntas siguen ocultas al paciente');
-assert.equal(patient.document.querySelectorAll('#figureCatalog [data-template]').length,30,'El paciente ve 30 muñecos');
-patient.document.getElementById('newFigureName').value='Amigo';
-await click(patient,'addFigure');
-assert.equal(stored.board.figures.length,2,'El paciente también puede añadir');
-assert.match(patient.document.getElementById('figuresLayer').textContent,/Amigo/,'El paciente ve su figura en el tablero');
-assert.equal(patient.document.getElementById('editCard').hidden,false,'El paciente puede editar el nombre');
 // Comprobar la colocación fuera de los círculos y su edición compartida.
 professional.document.getElementById('newFigureName').value='Persona exterior';
 await click(professional,'addOutsideFigure');
-assert.equal(stored.board.figures.length,3,'El psicólogo puede añadir muñecos fuera de los círculos');
+assert.equal(stored.board.figures.length,2,'El psicólogo puede añadir muñecos fuera de los círculos');
 const exterior=stored.board.figures.at(-1);
 assert.ok(Math.hypot(exterior.x-520,exterior.y-520)>489,'El muñeco nuevo está fuera del círculo exterior');
 assert.equal(professional.eval('circleIndexForFigure('+JSON.stringify(exterior)+')'),-1,
@@ -101,9 +90,43 @@ Object.defineProperty(dropped,'dataTransfer',{value:{getData:()=>unused.dataset.
 Object.defineProperty(canvas,'createSVGPoint',{value:()=>({x:0,y:0,matrixTransform(){return{x:100,y:105};}}),configurable:true});
 canvas.dispatchEvent(dropped);
 await sleep();
-assert.equal(stored.board.figures.length,4,'También se puede arrastrar un muñeco nuevo a la zona exterior');
+assert.equal(stored.board.figures.length,3,'También se puede arrastrar un muñeco nuevo a la zona exterior');
 assert.equal(professional.eval('circleFor(100,105)'),-1,'Las esquinas son exteriores');
 assert.ok(stored.board.figures.at(-1).x<200,'El muñeco arrastrado queda en la esquina');
+
+// Mover un muñeco ya colocado desde un círculo hasta la zona blanca exterior.
+canvas.createSVGPoint=()=>({x:0,y:0,matrixTransform(){return {x:this.x,y:this.y};}});
+canvas.setPointerCapture=()=>{};
+canvas.hasPointerCapture=()=>false;
+canvas.releasePointerCapture=()=>{};
+const placedMother=stored.board.figures[0];
+assert.ok(professional.eval('circleFor('+placedMother.x+','+placedMother.y+')')>=0,
+  'El muñeco de prueba empieza dentro de un círculo');
+function pointer(el,type,x,y){
+  const ev=new professional.MouseEvent(type,{bubbles:true,cancelable:true,clientX:x,clientY:y});
+  Object.defineProperty(ev,'pointerId',{value:17});
+  el.dispatchEvent(ev);
+}
+const drawn=professional.document.querySelector('#figuresLayer [data-uid="'+placedMother.uid+'"]');
+assert.ok(drawn,'El muñeco está dibujado');
+pointer(drawn,'pointerdown',placedMother.x,placedMother.y);
+pointer(canvas,'pointermove',120,120);
+pointer(canvas,'pointerup',120,120);
+await sleep();
+assert.equal(professional.eval('circleFor('+stored.board.figures[0].x+','+stored.board.figures[0].y+')'),-1,
+  'Al mover un muñeco fuera deja de estar asignado a un círculo');
+
+const patient=boot();
+patient.document.getElementById('patientCode').value='ABC123';
+await form(patient,'patientForm');
+assert.equal(patient.document.getElementById('workspace').hidden,false,'El paciente entra');
+assert.equal(patient.document.getElementById('questionsPanel').hidden,true,'Las preguntas siguen ocultas al paciente');
+assert.equal(patient.document.querySelectorAll('#figureCatalog [data-template]').length,30,'El paciente ve 30 muñecos');
+patient.document.getElementById('newFigureName').value='Amigo';
+await click(patient,'addFigure');
+assert.equal(stored.board.figures.length,4,'El paciente también puede añadir');
+assert.match(patient.document.getElementById('figuresLayer').textContent,/Amigo/,'El paciente ve su figura en el tablero');
+assert.equal(patient.document.getElementById('editCard').hidden,false,'El paciente puede editar el nombre');
 const pdf=professional.eval('pdfFromCanvas({width:1,height:1,toDataURL(){return "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2Q==";}})');
 assert.equal(pdf.type,'application/pdf','La descarga PDF tiene MIME correcto');
 assert.ok(pdf.size>400,'El archivo PDF se construye');
