@@ -1,0 +1,23 @@
+name: Validar aplicación web
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Comprobar sintaxis JavaScript
+        run: node --check app.js
+      - name: Comprobar contenido web
+        run: |
+          test -s index.html
+          test -s styles.css
+          grep -q "textPath" app.js
+          grep -q "questionsPanel" index.html
