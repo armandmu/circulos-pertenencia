@@ -388,18 +388,121 @@ async function copyPatientLink(){
     window.prompt('Copia el enlace para enviarlo al paciente:',link);
   }
 }
+function exportedSvg() {
+  const clone = board.cloneNode(true);
+  clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  clone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+  clone.setAttribute('width', '1040');
+  clone.setAttribute('height', '1040');
+  const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+  style.textContent = [
+    '.ring{stroke:#fff;stroke-width:2}',
+    '.ring-active{stroke:#4b4661;stroke-width:3;stroke-dasharray:7 5}',
+    '.ring-label{font-family:Arial,Helvetica,sans-serif;letter-spacing:1px;font-size:21px;font-weight:700}',
+    '.person-label{font-family:Arial,Helvetica,sans-serif;font-weight:700;font-size:20px;paint-order:stroke;stroke:white;stroke-width:4;stroke-linejoin:round;fill:#343448}',
+    '.person-outline{fill:#fff;stroke:#fff}'
+  ].join('');
+  clone.insertBefore(style, clone.firstChild);
+  return new XMLSerializer().serializeToString(clone);
+}
+function saveFile(blob, filename) {
+  const href = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = href;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(href), 5000);
+}
 function downloadSvg(){
-  const clone=board.cloneNode(true);
-  clone.setAttribute('xmlns','http://www.w3.org/2000/svg');
-  clone.setAttribute('width','1040');
-  clone.setAttribute('height','1040');
-  const css = document.createElementNS('http://www.w3.org/2000/svg','style');
-  css.textContent='.ring{stroke:#fff;stroke-width:2}.ring-active{stroke:#4b4661;stroke-width:3;stroke-dasharray:7 5}.ring-label{font-family:Arial,sans-serif;letter-spacing:1px;font-size:18px;font-weight:700}.center-label{font-family:Arial,sans-serif;font-size:22px;font-weight:700;fill:#9087a0}.person-label{font-family:Arial,sans-serif;font-weight:700;font-size:17px;paint-order:stroke;stroke:white;stroke-width:4;fill:#343448}.person-outline{fill:#fff;stroke:#fff}';
-  clone.insertBefore(css,clone.firstChild);
-  const data=new XMLSerializer().serializeToString(clone);
-  const url=URL.createObjectURL(new Blob([data],{type:'image/svg+xml;charset=utf-8'}));
-  const a=document.createElement('a');a.href=url;a.download='circulos-pertenencia.svg';document.body.appendChild(a);a.click();a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),1500);
+  saveFile(new Blob([exportedSvg()], {type:'image/svg+xml;charset=utf-8'}), 'circulos-pertenencia.svg');
+}
+async function canvasFromSvg(){
+  const blob = new Blob([exportedSvg()], {type:'image/svg+xml;charset=utf-8'});
+  const objectUrl = URL.createObjectURL(blob);
+  try {
+    const image = new Image();
+    await new Promise((resolve, reject) => {
+      image.onload = resolve;
+      image.onerror = () => reject(new Error('No se ha podido convertir la imagen SVG.'));
+      image.src = objectUrl;
+    });
+    const canvas = document.createElement('canvas');
+    canvas.width = 1800; canvas.height = 1800;
+    const context = canvas.getContext('2d');
+    if(!context) throw new Error('El navegador no permite crear el archivo gráfico.');
+    context.fillStyle = '#fff';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    return canvas;
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+async function downloadPng(){
+  const canvas = await canvasFromSvg();
+  const blob = await new Promise((resolve, reject) => canvas.toBlob(
+    b => b ? resolve(b) : reject(new Error('No se pudo generar el PNG.')), 'image/png'));
+  saveFile(blob, 'circulos-pertenencia.png');
+}
+// PDF de una página cuadrada con imagen JPEG en alta resolución. Se construye
+// en el navegador para que la composición no se envíe a ningún otro servicio.
+function pdfFromCanvas(canvas) {
+  const data = atob(canvas.toDataURL('image/jpeg', 0.96).split(',')[1]);
+  const jpeg = new Uint8Array(data.length);
+  for(let i=0; i<data.length; i++) jpeg[i] = data.charCodeAt(i);
+  const encoder = new TextEncoder();
+  const parts = [];
+  const offsets = [0];
+  let length = 0;
+  function push(value){
+    const bytes = typeof value === 'string' ? encoder.encode(value) : value;
+    parts.push(bytes);
+    length += bytes.length;
+  }
+  function obj(id, value){
+    offsets[id] = length;
+    push(id + ' 0 obj\n');
+    push(value);
+    push('\nendobj\n');
+  }
+  push('%PDF-1.4\n');
+  obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
+  obj(2, '<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+  obj(3, '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 720 720] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>');
+  offsets[4] = length;
+  push('4 0 obj\n<< /Type /XObject /Subtype /Image /Width ' + canvas.width +
+    ' /Height ' + canvas.height + ' /ColorSpace /DeviceRGB /BitsPerComponent 8' +
+    ' /Filter /DCTDecode /Length ' + jpeg.byteLength + ' >>\nstream\n');
+  push(jpeg);
+  push('\nendstream\nendobj\n');
+  const instructions = 'q\n720 0 0 720 0 0 cm\n/Im0 Do\nQ\n';
+  obj(5, '<< /Length ' + encoder.encode(instructions).length + ' >>\nstream\n' +
+    instructions + 'endstream');
+  const xrefStart = length;
+  push('xref\n0 6\n0000000000 65535 f \n');
+  for(let id=1;id<=5;id++) push(String(offsets[id]).padStart(10,'0') + ' 00000 n \n');
+  push('trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n' + xrefStart + '\n%%EOF');
+  return new Blob(parts, {type:'application/pdf'});
+}
+async function downloadPdf(){
+  const canvas = await canvasFromSvg();
+  saveFile(pdfFromCanvas(canvas), 'circulos-pertenencia.pdf');
+}
+async function runExport(button, handler){
+  const text = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Preparando archivo…';
+  try {
+    clearError();
+    await handler();
+  }catch(error){
+    alertError('No se pudo guardar el archivo: '+(error.message || 'Error desconocido'), true);
+  }finally {
+    button.disabled = false;
+    button.textContent = text;
+  }
 }
 function onBoardPointerDown(event){
   if(!canEditFigures())return;
@@ -444,7 +547,9 @@ function initializeEvents(){
   $('patientForm').addEventListener('submit',joinSession);
   $('exitButton').addEventListener('click',exitSession);
   $('shareButton').addEventListener('click',copyPatientLink);
-  $('exportButton').addEventListener('click',downloadSvg);
+  $('exportButton').addEventListener('click',()=>runExport($('exportButton'),downloadSvg));
+  $('exportPngButton').addEventListener('click',()=>runExport($('exportPngButton'),downloadPng));
+  $('exportPdfButton').addEventListener('click',()=>runExport($('exportPdfButton'),downloadPdf));
   $('infoButton').addEventListener('click',()=>{
     if(state.role!=='therapist')return;
     state.infoRing=state.infoRing===state.selectedRing?null:state.selectedRing;
