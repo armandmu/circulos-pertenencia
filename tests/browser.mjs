@@ -82,6 +82,28 @@ await click(patient,'addFigure');
 assert.equal(stored.board.figures.length,2,'El paciente también puede añadir');
 assert.match(patient.document.getElementById('figuresLayer').textContent,/Amigo/,'El paciente ve su figura en el tablero');
 assert.equal(patient.document.getElementById('editCard').hidden,false,'El paciente puede editar el nombre');
+// Comprobar la colocación fuera de los círculos y su edición compartida.
+professional.document.getElementById('newFigureName').value='Persona exterior';
+await click(professional,'addOutsideFigure');
+assert.equal(stored.board.figures.length,3,'El psicólogo puede añadir muñecos fuera de los círculos');
+const exterior=stored.board.figures.at(-1);
+assert.ok(Math.hypot(exterior.x-520,exterior.y-520)>489,'El muñeco nuevo está fuera del círculo exterior');
+assert.equal(professional.eval('circleIndexForFigure('+JSON.stringify(exterior)+')'),-1,
+  'Un muñeco exterior no pertenece a Seguridad ni a ningún otro círculo');
+assert.match(professional.document.getElementById('figureZone').textContent,/fuera de los círculos/,
+  'El editor informa que no está en un círculo');
+const canvas=professional.document.getElementById('circleBoard');
+canvas.createSVGPoint=()=>({x:0,y:0,matrixTransform(){return{x:this.x,y:this.y};}});
+canvas.getScreenCTM=()=>({inverse(){return {};}});
+const unused=professional.document.querySelector('#figureCatalog [data-template]:not([disabled])');
+const dropped=new professional.Event('drop',{bubbles:true,cancelable:true});
+Object.defineProperty(dropped,'dataTransfer',{value:{getData:()=>unused.dataset.template}});
+Object.defineProperty(canvas,'createSVGPoint',{value:()=>({x:0,y:0,matrixTransform(){return{x:100,y:105};}}),configurable:true});
+canvas.dispatchEvent(dropped);
+await sleep();
+assert.equal(stored.board.figures.length,4,'También se puede arrastrar un muñeco nuevo a la zona exterior');
+assert.equal(professional.eval('circleFor(100,105)'),-1,'Las esquinas son exteriores');
+assert.ok(stored.board.figures.at(-1).x<200,'El muñeco arrastrado queda en la esquina');
 const pdf=professional.eval('pdfFromCanvas({width:1,height:1,toDataURL(){return "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2Q==";}})');
 assert.equal(pdf.type,'application/pdf','La descarga PDF tiene MIME correcto');
 assert.ok(pdf.size>400,'El archivo PDF se construye');
