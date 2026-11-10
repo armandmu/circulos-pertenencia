@@ -14,9 +14,9 @@ const getRow = value => Array.isArray(value) ? value[0] : value;
 const tidy = value => String(value || '').replace(/[\r\n\t<>]/g, ' ').trim().slice(0, 30);
 const xml = value => String(value).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&apos;' })[c]);
 const rootUrl = new URL('./', window.location.href).href;
-const CX = 380, CY = 380, CENTER_RADIUS = 54;
+const CX = 520, CY = 520, CENTER_RADIUS = 45;
 const RINGS = [
-  { id:'seguridad', name:'Seguridad', emotion:'Miedo', outer:342, inner:294, color:'#DCCFF5', ink:'#64498b',
+  { id:'seguridad', name:'Seguridad', emotion:'Miedo', outer:489, inner:415, color:'#DCCFF5', ink:'#64498b',
     description:'Personas con las que te sientes seguro, respetado y sin necesidad de estar a la defensiva. Su presencia no supone una amenaza.',
     questions:[
       '¿Tienes personas con las que te sientes completamente segura, sin necesidad de estar alerta?',
@@ -25,7 +25,7 @@ const RINGS = [
       '¿Sientes que no necesitas justificarte ni defenderte constantemente?',
       '¿Te rodeas de personas que no te generan ansiedad ni tensión anticipatoria?'
     ]},
-  { id:'desarrollo', name:'Desarrollo', emotion:'Tristeza', outer:294, inner:246, color:'#CDE6F8', ink:'#3875a3',
+  { id:'desarrollo', name:'Desarrollo', emotion:'Tristeza', outer:415, inner:341, color:'#CDE6F8', ink:'#3875a3',
     description:'Personas que te aportan aprendizaje, sensibilidad y comprensión. Te escuchan y te ayudan a avanzar.',
     questions:[
       '¿Tienes relaciones donde puedes compartir tu tristeza y sentirte comprendida?',
@@ -34,7 +34,7 @@ const RINGS = [
       '¿Puedes expresar tus emociones sin miedo a que minimicen tu experiencia?',
       '¿Notas que algunas relaciones te suman y te enriquecen sin drenarte?'
     ]},
-  { id:'justicia', name:'Justicia', emotion:'Rabia', outer:246, inner:198, color:'#F3CCD0', ink:'#a44d5e',
+  { id:'justicia', name:'Justicia', emotion:'Rabia', outer:341, inner:267, color:'#F3CCD0', ink:'#a44d5e',
     description:'Relaciones en las que experimentas igualdad, honestidad y respeto por tus límites, sin manipulación ni abusos.',
     questions:[
       '¿Tienes relaciones donde sientes que todo es equitativo, sin juegos de poder?',
@@ -43,7 +43,7 @@ const RINGS = [
       '¿Puedes expresar tu rabia o tu malestar sin miedo a ser rechazada?',
       '¿Tienes relaciones que te dan energía y no te restan vitalidad?'
     ]},
-  { id:'reconocimiento', name:'Reconocimiento', emotion:'Orgullo', outer:198, inner:150, color:'#D1E9D7', ink:'#397a55',
+  { id:'reconocimiento', name:'Reconocimiento', emotion:'Orgullo', outer:267, inner:193, color:'#D1E9D7', ink:'#397a55',
     description:'Personas que te reconocen y valoran como eres, y te permiten expresarte con autenticidad, sin juicio ni competitividad.',
     questions:[
       '¿Hay personas que valoran quién eres tal y como eres, sin querer cambiarte?',
@@ -52,7 +52,7 @@ const RINGS = [
       '¿Tienes relaciones donde puedes brillar sin miedo a generar envidia?',
       '¿Sientes orgullo sano de compartir con ciertas personas tu camino?'
     ]},
-  { id:'pertenencia', name:'Pertenencia', emotion:'Amor', outer:150, inner:102, color:'#FFDEC3', ink:'#ae6631',
+  { id:'pertenencia', name:'Pertenencia', emotion:'Amor', outer:193, inner:119, color:'#FFDEC3', ink:'#ae6631',
     description:'Vínculos de cercanía y cuidado mutuo, donde puedes compartir tu intimidad, recibir apoyo y ser quien eres.',
     questions:[
       '¿Puedes ser tú misma completamente con ciertas personas, incluso en tus momentos más vulnerables?',
@@ -61,7 +61,7 @@ const RINGS = [
       '¿Tienes vínculos donde hay cuidado sincero, sin celos ni exigencias?',
       '¿Vives relaciones de apoyo real, con calidez y sin juicios?'
     ]},
-  { id:'plenitud', name:'Plenitud', emotion:'Alegría', outer:102, inner:54, color:'#FFF0B6', ink:'#99752d',
+  { id:'plenitud', name:'Plenitud', emotion:'Alegría', outer:119, inner:45, color:'#FFF0B6', ink:'#99752d',
     description:'Personas con las que puedes fluir con libertad y espontaneidad, compartir alegría y abrirte a nuevas experiencias.',
     questions:[
       '¿Tienes personas con las que fluyes de forma natural, sin esfuerzo?',
@@ -71,9 +71,9 @@ const RINGS = [
       '¿Sientes ligereza y libertad en alguna relación actual?'
     ]}
 ];
-const COLORS = ['#8BADC1','#E9ACAC','#7EB396','#E8BD66','#A8A0CD','#C1856C','#ACC4A0','#D99D58','#75919A','#CDA6BB','#A5B2DF','#B6A185','#82C5B2','#D9C17D','#AD98B5','#CAAF9E','#92B4A1','#D28F8C'];
+const COLORS = ['#8BADC1','#E9ACAC','#7EB396','#E8BD66','#A8A0CD','#C1856C','#ACC4A0','#D99D58','#75919A','#CDA6BB','#A5B2DF','#B6A185','#82C5B2','#D9C17D','#AD98B5','#CAAF9E','#92B4A1','#D28F8C','#9CAFC4','#E2A0C0','#91B5B1','#D4A36D','#B9A4C3','#9FB7A0','#CCACA3','#B5C8DB','#E5BEA9','#8FB8D8','#9DA3C6','#B1C995'];
 const TEMPLATES = COLORS.map((color, i) => ({id:'a'+String(i+1).padStart(2,'0'), color, size:['pequeno','mediano','grande'][i % 3]}));
-const SCALE = {pequeno:.41, mediano:.49, grande:.57};
+const SCALE = {pequeno:.5, mediano:.61, grande:.73};
 const freshBoard = () => ({kind:'circles-belonging',version:1, figures:[]});
 const clientId = crypto.randomUUID();
 const state = {
@@ -81,6 +81,7 @@ const state = {
   selectedTemplate:TEMPLATES[0].id, selectedUid:null, infoRing:null, dragging:null,
   connected:false, lastRevision:0, saving:false, pending:false, editMode:false, closing:false
 };
+function canEditFigures(){ return !!state.session && (state.role === 'patient' || state.role === 'therapist'); }
 const board = $('circleBoard');
 const params = new URLSearchParams(window.location.search);
 if(params.get('code')) $('patientCode').value = params.get('code').toUpperCase();
@@ -155,8 +156,8 @@ function buildBoard(){
     labels += '<text class="ring-label" data-ring="'+i+'" fill="'+ring.ink+'"><textPath href="#arc-'+ring.id+'" startOffset="50%" text-anchor="middle">'+xml(ring.name.toUpperCase())+'</textPath></text>';
   });
   board.innerHTML = '<defs>'+paths+'</defs>'+rings+
-    '<circle cx="'+CX+'" cy="'+CY+'" r="'+CENTER_RADIUS+'" fill="#fff" stroke="#fff" stroke-width="2" aria-label="Centro Yo"/>' +
-    labels+'<text class="center-label" x="'+CX+'" y="'+(CY+8)+'" text-anchor="middle">YO</text>' +
+    '<circle cx="'+CX+'" cy="'+CY+'" r="'+CENTER_RADIUS+'" fill="#fff" stroke="#fff" stroke-width="2" aria-label="Centro blanco"/>' +
+    labels +
     '<g id="figuresLayer"></g>';
   renderRing();
 }
@@ -203,7 +204,7 @@ function renderFigures(){
     if(!Number.isFinite(x)||!Number.isFinite(y))return '';
     return '<g class="person'+(f.uid===state.selectedUid?' is-selected':'')+'" role="button" tabindex="0" data-uid="'+xml(f.uid)+'" aria-label="'+xml(f.name||'Persona')+'" transform="translate('+(x-40*scale)+' '+(y-57*scale)+') scale('+scale+')">' +
       '<rect class="person-outline" x="2" y="-4" width="76" height="115" rx="25"/>'+figurineArt(t, f.direction || 'frente')+
-      '</g><text x="'+x+'" y="'+(y+60*scale+15)+'" class="person-label" text-anchor="middle">'+xml(f.name||'Persona')+'</text>';
+      '</g><text data-uid="'+xml(f.uid)+'" x="'+x+'" y="'+(y+60*scale+15)+'" class="person-label" text-anchor="middle">'+xml(f.name||'Persona')+'</text>';
   }).join('');
   $('boardCount').textContent=state.board.figures.length+' figura'+(state.board.figures.length===1?' colocada':'s colocadas');
   renderCatalog();
@@ -211,7 +212,7 @@ function renderFigures(){
 }
 function renderEditor(){
   const item=state.board.figures.find(f=>f.uid===state.selectedUid);
-  $('editCard').hidden=state.role!=='patient'||!item;
+  $('editCard').hidden=!canEditFigures()||!item;
   if(!item){state.editMode=false;return;}
   if(!state.editMode) $('editFigureName').value=item.name||'';
 }
@@ -222,7 +223,7 @@ function refreshWorkspace(){
   document.querySelectorAll('.professional-only').forEach(el=>el.hidden=state.role!=='therapist');
   document.querySelectorAll('.patient-only').forEach(el=>el.hidden=state.role!=='patient');
   $('roleLabel').textContent=state.role==='therapist'?'PANEL PRIVADO DEL PSICÓLOGO':'PANTALLA DEL PACIENTE';
-  $('workspaceSub').textContent=state.role==='therapist'?'Selecciona una franja y consulta las preguntas.':'Selecciona figuras para representar a las personas de tu vida.';
+  $('workspaceSub').textContent=state.role==='therapist'?'Consulta las preguntas y coloca, mueve o renombra figuras junto al paciente.':'Selecciona figuras para representar a las personas de tu vida.';
   $('exitButton').textContent=state.role==='therapist'?'Finalizar sesión':'Salir';
   $('connectionStatus').textContent=state.connected?'Conectado':'Conectando…';
   $('connectionStatus').classList.toggle('connected',state.connected);
@@ -258,7 +259,7 @@ async function persist(){
   }finally{state.saving=false;}
 }
 function changeBoard(next){
-  if(state.role!=='patient'||!state.session)return;
+  if(!canEditFigures())return;
   const version=Math.max(Date.now(),state.lastRevision+1);
   state.lastRevision=version;
   state.board={...next,_sync:{version,from:clientId}};
@@ -267,8 +268,8 @@ function changeBoard(next){
   persist();
 }
 function addFigure(templateId,location,forcedRing=null){
-  if(state.role!=='patient')return;
-  if(state.board.figures.length>=18){alertError('Ya has colocado las 18 figuras disponibles.',true);return;}
+  if(!canEditFigures())return;
+  if(state.board.figures.length>=TEMPLATES.length){alertError('Ya has colocado las 30 figuras disponibles.',true);return;}
   if(state.board.figures.some(f=>f.templateId===templateId))return;
   const pos=location || figureAtRing(forcedRing===null?state.selectedRing:forcedRing);
   const point=constrain(pos.x,pos.y);
@@ -390,8 +391,8 @@ async function copyPatientLink(){
 function downloadSvg(){
   const clone=board.cloneNode(true);
   clone.setAttribute('xmlns','http://www.w3.org/2000/svg');
-  clone.setAttribute('width','760');
-  clone.setAttribute('height','760');
+  clone.setAttribute('width','1040');
+  clone.setAttribute('height','1040');
   const css = document.createElementNS('http://www.w3.org/2000/svg','style');
   css.textContent='.ring{stroke:#fff;stroke-width:2}.ring-active{stroke:#4b4661;stroke-width:3;stroke-dasharray:7 5}.ring-label{font-family:Arial,sans-serif;letter-spacing:1px;font-size:18px;font-weight:700}.center-label{font-family:Arial,sans-serif;font-size:22px;font-weight:700;fill:#9087a0}.person-label{font-family:Arial,sans-serif;font-weight:700;font-size:17px;paint-order:stroke;stroke:white;stroke-width:4;fill:#343448}.person-outline{fill:#fff;stroke:#fff}';
   clone.insertBefore(css,clone.firstChild);
@@ -401,7 +402,7 @@ function downloadSvg(){
   setTimeout(()=>URL.revokeObjectURL(url),1500);
 }
 function onBoardPointerDown(event){
-  if(state.role!=='patient')return;
+  if(!canEditFigures())return;
   const target=event.target.closest('[data-uid]');
   if(!target)return;
   const uid=target.getAttribute('data-uid');
@@ -418,7 +419,7 @@ function onBoardPointerDown(event){
 }
 function onBoardPointerMove(event){
   const drag=state.dragging;
-  if(!drag||state.role!=='patient'||drag.pointer!==event.pointerId)return;
+  if(!drag||!canEditFigures()||drag.pointer!==event.pointerId)return;
   const point=svgPoint(event);
   const d=Math.hypot(point.x-drag.startX,point.y-drag.startY);
   if(d<2 && !drag.moved)return;
@@ -455,6 +456,17 @@ function initializeEvents(){
     const ring=e.target.closest('[data-ring]');
     if(ring)selectRing(Number(ring.getAttribute('data-ring')));
   });
+  board.addEventListener('dblclick',event=>{
+    if(!canEditFigures())return;
+    const target=event.target.closest('[data-uid]');
+    const item=state.board.figures.find(f=>f.uid===target?.dataset.uid);
+    if(!item)return;
+    state.selectedUid=item.uid;
+    state.editMode=false;
+    renderFigures();
+    $('editFigureName').focus();
+    $('editFigureName').select();
+  });
   board.addEventListener('pointerdown',onBoardPointerDown);
   board.addEventListener('pointermove',onBoardPointerMove);
   board.addEventListener('pointerup',onBoardPointerUp);
@@ -471,10 +483,10 @@ function initializeEvents(){
     }
   });
   board.addEventListener('dragover',e=>{
-    if(state.role==='patient')e.preventDefault();
+    if(canEditFigures())e.preventDefault();
   });
   board.addEventListener('drop',e=>{
-    if(state.role!=='patient')return;
+    if(!canEditFigures())return;
     e.preventDefault();
     const id=e.dataTransfer?.getData('text/plain');
     if(!TEMPLATES.some(t=>t.id===id))return;
@@ -492,7 +504,7 @@ function initializeEvents(){
   });
   $('figureCatalog').addEventListener('dragstart',e=>{
     const button=e.target.closest('[data-template]');
-    if(!button||button.disabled||state.role!=='patient'){e.preventDefault();return;}
+    if(!button||button.disabled||!canEditFigures()){e.preventDefault();return;}
     state.selectedTemplate=button.dataset.template;
     e.dataTransfer.setData('text/plain',button.dataset.template);
     e.dataTransfer.effectAllowed='copy';
