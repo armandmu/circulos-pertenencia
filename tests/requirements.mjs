@@ -25,4 +25,10 @@ assert.ok(html.indexOf('id="editCard"') < html.indexOf('id="figureCatalog"'), 'E
 assert.match(js, /addEventListener\('dblclick'/, 'Editar el nombre con doble clic');
 assert.match(html, /id="questionsPanel" class="questions-panel professional-only"/, 'Preguntas exclusivas de la interfaz profesional');
 assert.match(js, /textPath href="#arc-/, 'Los nombres siguen sus franjas circulares');
+assert.match(html, /app\.js\?v=20261110-r3/, 'Se fuerza versión del JS');
+assert.match(css, /board-surface\{margin:0;width:100%;max-width:none/, 'Círculos ocupan el ancho del tablero');
+assert.match(html, /id="exportPngButton"/, 'Exportar PNG');
+assert.match(html, /id="exportPdfButton"/, 'Exportar PDF');
+assert.match(js, /function pdfFromCanvas\(canvas\)/, 'Generación de PDF local');
+assert.match(js, /function downloadPng\(\)/, 'Generación de PNG local');
 console.log('OK: seis círculos anchos, centro blanco, 30 muñecos y edición compartida.');
