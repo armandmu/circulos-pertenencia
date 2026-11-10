@@ -13,6 +13,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Instalar entorno de pruebas DOM
+        run: npm install --no-save --no-audit --no-fund jsdom@26.1.0
+      - name: Probar altas y cambios de nombre en ambas pantallas
+        run: node tests/browser.mjs
       - name: Comprobar sintaxis JavaScript
         run: node --check app.js
       - name: Verificar requisitos de interfaz
