@@ -37,6 +37,7 @@ function boot(){
     pretendToBeVisual:true
   });
   dom.window.__mockCreateClient = createMockClient;
+  dom.window.TextEncoder = globalThis.TextEncoder;
   Object.defineProperty(dom.window.crypto,'randomUUID',{configurable:true,value:()=>('test-'+Math.random())});
   dom.window.eval(js);
   return dom.window;
