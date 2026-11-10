@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#f8f7fc"/>
   <meta name="description" content="Círculos de pertenencia: ejercicio visual de exploración de vínculos para psicoterapia."/>
   <title>Círculos de pertenencia · Ángel Rull</title>
-  <link rel="stylesheet" href="./styles.css"/>
+  <link rel="stylesheet" href="./styles.css?v=20261110-r3"/>
 </head>
 <body>
   <header class="site-header">
@@ -53,7 +53,9 @@
         <div class="workspace-actions">
           <span id="connectionStatus" class="status">Conectando…</span>
           <button type="button" id="shareButton" class="button secondary professional-only">Copiar enlace del paciente</button>
-          <button type="button" id="exportButton" class="button secondary professional-only">Guardar imagen SVG</button>
+          <button type="button" id="exportButton" class="button secondary professional-only">SVG</button>
+          <button type="button" id="exportPngButton" class="button secondary professional-only">PNG</button>
+          <button type="button" id="exportPdfButton" class="button secondary professional-only">PDF</button>
           <button type="button" id="exitButton" class="button ghost">Salir</button>
         </div>
       </div>
@@ -91,7 +93,7 @@
           </section>
 
           <section class="side-card figure-tools-card">
-            <span class="eyebrow">PERSONAS DE TU VIDA</span>
+            <span class="eyebrow">PERSONAS DE TU VIDA · 30 MUÑECOS</span>
             <h2>Elige una figura</h2>
             <p class="side-description">Selecciona un muñeco, escribe cómo quieres identificar a esa persona y añádelo al círculo elegido. También puedes arrastrarlo directamente al mapa.</p>
             <div id="figureCatalog" class="figure-catalog" aria-label="Catálogo de figuras"></div>
@@ -111,6 +113,6 @@
     </section>
   </main>
   <footer class="site-footer">Ángel Rull · Psicología online <a href="https://angelrull.com" target="_blank" rel="noopener noreferrer">angelrull.com</a></footer>
-  <script type="module" src="./app.js"></script>
+  <script type="module" src="./app.js?v=20261110-r3"></script>
 </body>
 </html>
