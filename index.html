@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#f8f7fc"/>
   <meta name="description" content="Círculos de pertenencia: ejercicio visual de exploración de vínculos para psicoterapia."/>
   <title>Círculos de pertenencia · Ángel Rull</title>
-  <link rel="stylesheet" href="./styles.css?v=20261110-r3"/>
+  <link rel="stylesheet" href="./styles.css?v=20261110-r4"/>
 </head>
 <body>
   <header class="site-header">
@@ -69,7 +69,7 @@
           <div class="board-surface">
             <svg id="circleBoard" viewBox="0 0 1040 1040" aria-label="Seis círculos concéntricos de pertenencia, con figuras movibles"></svg>
           </div>
-          <div class="board-foot"><span id="boardCount">0 figuras colocadas</span><span>Centro blanco</span></div>
+          <div class="board-foot"><span id="boardCount">0 figuras colocadas</span><span>Espacio blanco exterior: sin círculo asignado</span></div>
         </section>
 
         <aside class="sidebar">
@@ -89,6 +89,7 @@
             <span class="eyebrow">FIGURA SELECCIONADA · EDITAR NOMBRE</span>
             <h2>Editar persona</h2>
             <label class="field-label">Nombre o referencia<input id="editFigureName" type="text" maxlength="30"></label>
+            <p id="figureZone" class="microcopy" aria-live="polite"></p>
             <div class="inline-buttons"><button id="saveFigureName" type="button" class="button secondary">Guardar nombre</button><button id="removeFigure" type="button" class="button danger">Retirar figura</button></div>
           </section>
 
@@ -99,7 +100,8 @@
             <div id="figureCatalog" class="figure-catalog" aria-label="Catálogo de figuras"></div>
             <label class="field-label">¿Cómo quieres llamarla?<input id="newFigureName" type="text" maxlength="30" placeholder="Ej.: madre, compañero, amiga…"></label>
             <button id="addFigure" type="button" class="button primary wide">Añadir al círculo seleccionado</button>
-            <p class="microcopy">Ambos participantes podéis añadir y mover figuras. Haz clic sobre un muñeco o su nombre para editarlo. También puedes hacer doble clic para cambiar el nombre directamente.</p>
+            <button id="addOutsideFigure" type="button" class="button secondary wide">Añadir fuera de los círculos</button>
+            <p class="microcopy">Ambos participantes podéis añadir y mover figuras dentro o fuera de los círculos. El espacio blanco exterior no corresponde a ningún círculo. Haz clic en un muñeco o su nombre para editarlo.</p>
           </section>
 
           <section class="side-card help-card">
@@ -113,6 +115,6 @@
     </section>
   </main>
   <footer class="site-footer">Ángel Rull · Psicología online <a href="https://angelrull.com" target="_blank" rel="noopener noreferrer">angelrull.com</a></footer>
-  <script type="module" src="./app.js?v=20261110-r3"></script>
+  <script type="module" src="./app.js?v=20261110-r4"></script>
 </body>
 </html>
