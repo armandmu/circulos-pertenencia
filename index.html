@@ -65,9 +65,9 @@
             <span id="boardHelper">Selecciona un círculo para empezar</span>
           </div>
           <div class="board-surface">
-            <svg id="circleBoard" viewBox="0 0 760 760" aria-label="Seis círculos concéntricos de pertenencia, con figuras movibles"></svg>
+            <svg id="circleBoard" viewBox="0 0 1040 1040" aria-label="Seis círculos concéntricos de pertenencia, con figuras movibles"></svg>
           </div>
-          <div class="board-foot"><span id="boardCount">0 figuras colocadas</span><span>Centro blanco · «Yo»</span></div>
+          <div class="board-foot"><span id="boardCount">0 figuras colocadas</span><span>Centro blanco</span></div>
         </section>
 
         <aside class="sidebar">
@@ -83,18 +83,18 @@
             </div>
           </section>
 
-          <section class="side-card patient-only">
+          <section class="side-card figure-tools-card">
             <span class="eyebrow">PERSONAS DE TU VIDA</span>
             <h2>Elige una figura</h2>
             <p class="side-description">Selecciona un muñeco, escribe cómo quieres identificar a esa persona y añádelo al círculo elegido. También puedes arrastrarlo directamente al mapa.</p>
             <div id="figureCatalog" class="figure-catalog" aria-label="Catálogo de figuras"></div>
             <label class="field-label">¿Cómo quieres llamarla?<input id="newFigureName" type="text" maxlength="30" placeholder="Ej.: madre, compañero, amiga…"></label>
             <button id="addFigure" type="button" class="button primary wide">Añadir al círculo seleccionado</button>
-            <p class="microcopy">Después puedes arrastrar la figura a otro círculo.</p>
+            <p class="microcopy">Ambos participantes podéis añadir y mover figuras. Haz clic sobre un muñeco o su nombre para editarlo. También puedes hacer doble clic para cambiar el nombre directamente.</p>
           </section>
 
-          <section id="editCard" class="side-card patient-only" hidden>
-            <span class="eyebrow">FIGURA SELECCIONADA</span>
+          <section id="editCard" class="side-card" hidden>
+            <span class="eyebrow">FIGURA SELECCIONADA · EDITAR NOMBRE</span>
             <h2>Editar persona</h2>
             <label class="field-label">Nombre o referencia<input id="editFigureName" type="text" maxlength="30"></label>
             <div class="inline-buttons"><button id="saveFigureName" type="button" class="button secondary">Guardar nombre</button><button id="removeFigure" type="button" class="button danger">Retirar figura</button></div>
@@ -102,7 +102,7 @@
           <section class="side-card help-card">
             <span class="eyebrow">CÓMO USARLO</span>
             <p class="side-description patient-only">Los círculos representan distintas experiencias en las relaciones. No hay respuestas correctas. Coloca cada persona donde sientas que encaja.</p>
-            <p class="side-description professional-only">Haz clic en cualquiera de las franjas y después en «Ver preguntas». Las preguntas aparecen en tu pantalla, no en la del paciente.</p>
+            <p class="side-description professional-only">Haz clic en una franja y después en «Ver preguntas». Las preguntas aparecen solo en tu pantalla. Tú también puedes crear, mover y renombrar las figuras.</p>
             <p class="side-description"><strong>Los círculos no son una clasificación diagnóstica.</strong> Son una propuesta de exploración y diálogo.</p>
           </section>
         </aside>
