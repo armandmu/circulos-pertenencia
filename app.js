@@ -79,7 +79,10 @@ const clientId = crypto.randomUUID();
 const state = {
   role:'', session:null, board:freshBoard(), channel:null, selectedRing:0,
   selectedTemplate:TEMPLATES[0].id, selectedUid:null, infoRing:null, dragging:null,
-  connected:false, lastRevision:0, saving:false, pending:false, editMode:false, closing:false
+  connected:false, peerPresent:false, peerLastSeenAt:0, members:[],
+  connectionError:'', lastRevision:0, saving:false, pending:false,
+  incomingWhileSaving:null, syncTimer:null, reconnectNotice:false,
+  lastDragBroadcast:0, remoteDrag:null, editMode:false, closing:false
 };
 function canEditFigures(){ return !!state.session && (state.role === 'patient' || state.role === 'therapist'); }
 const board = $('circleBoard');
@@ -220,7 +223,8 @@ function renderFigures(){
   const layer=$('figuresLayer');
   if(!layer)return;
   layer.innerHTML=state.board.figures.map(f=>{
-    const t=templateOf(f.templateId), scale=SCALE[t.size], x=Number(f.x), y=Number(f.y);
+    const moved=state.remoteDrag?.uid===f.uid?state.remoteDrag:f;
+    const t=templateOf(f.templateId), scale=SCALE[t.size], x=Number(moved.x), y=Number(moved.y);
     if(!Number.isFinite(x)||!Number.isFinite(y))return '';
     return '<g class="person'+(f.uid===state.selectedUid?' is-selected':'')+'" role="button" tabindex="0" data-uid="'+xml(f.uid)+'" aria-label="'+xml(f.name||'Persona')+'" transform="translate('+(x-40*scale)+' '+(y-57*scale)+') scale('+scale+')">' +
       '<rect class="person-outline" x="2" y="-4" width="76" height="115" rx="25"/>'+figurineArt(t, f.direction || 'frente')+
@@ -253,21 +257,95 @@ function refreshWorkspace(){
   $('roleLabel').textContent=state.role==='therapist'?'PANEL PRIVADO DEL PSICÓLOGO':'PANTALLA DEL PACIENTE';
   $('workspaceSub').textContent=state.role==='therapist'?'Consulta las preguntas y coloca, mueve o renombra figuras junto al paciente.':'Selecciona figuras para representar a las personas de tu vida.';
   $('exitButton').textContent=state.role==='therapist'?'Finalizar sesión':'Salir';
-  $('connectionStatus').textContent=state.connected?'Conectado':'Conectando…';
-  $('connectionStatus').classList.toggle('connected',state.connected);
+  updateConnectionStatus();
   renderRing();renderFigures();
 }
+// La conexión al servidor y la presencia del otro participante son estados diferentes.
+// Un canal suscrito no demuestra por sí solo que el tablero se comparta con alguien.
+function peerRole(){
+  return state.role === 'therapist' ? 'patient' : 'therapist';
+}
+function peerName(){
+  return state.role === 'therapist' ? 'paciente' : 'psicólogo';
+}
+function updateConnectionStatus(){
+  if(!state.session)return;
+  const server=$('connectionStatus');
+  const peer=$('peerStatus');
+  server.textContent=state.connected?'● Servidor conectado':'○ Sin conexión al servidor';
+  server.classList.toggle('connected',state.connected);
+  const present=state.connected && (
+    state.members.some(m=>m.role===peerRole() && m.clientId!==clientId) ||
+    (state.peerLastSeenAt && Date.now()-state.peerLastSeenAt < 35000)
+  );
+  state.peerPresent=!!present;
+  peer.textContent=!state.connected
+    ? 'Sin sincronización en directo'
+    : present ? '● '+(state.role==='therapist'?'Paciente conectado':'Psicólogo conectado')
+      : '○ Esperando al '+peerName();
+  peer.classList.toggle('connected',!!present);
+  peer.classList.toggle('waiting',!present);
+  peer.title=present?'La otra pantalla responde en esta misma sesión.':
+    'Solo se confirma la conexión de esta pantalla al servidor; falta la otra persona.';
+}
+function markPeer(payload){
+  if(!payload || payload.from===clientId || payload.role!==peerRole())return;
+  state.peerLastSeenAt=Date.now();
+  updateConnectionStatus();
+}
+async function sendChannelEvent(event,payload={}){
+  const channel=state.channel;
+  if(!state.connected || !channel)return false;
+  try{
+    // ack:true confirma que Realtime recibió el mensaje, no que el otro cliente lo procesó.
+    const result=await channel.send({
+      type:'broadcast',event,
+      payload:{from:clientId,role:state.role,...payload}
+    });
+    if(result!=='ok'){
+      state.connectionError='No se ha podido confirmar el envío de los cambios.';
+      return false;
+    }
+    state.connectionError='';
+    return true;
+  }catch(error){
+    state.connectionError=error.message||'No se ha podido conectar con el otro participante.';
+    return false;
+  }
+}
+function requestLatestBoard(){
+  if(!state.connected)return;
+  // Repetir la solicitud recupera cambios aunque se pierda un mensaje por un corte de red.
+  sendChannelEvent('board_request',{knownVersion:state.lastRevision}).catch(()=>{});
+}
 function receiveBoard(incoming){
-  if(!incoming||incoming.kind!=='circles-belonging'||state.dragging)return;
+  if(!incoming || incoming.kind!=='circles-belonging')return;
   const version=Number(incoming._sync?.version||0);
   if(version && version<=state.lastRevision)return;
   if(!version && state.lastRevision)return;
+  // Evitar sustituir un movimiento todavía sin guardar con un eco del otro cliente.
+  if(state.dragging || state.saving || state.pending){
+    if(!state.incomingWhileSaving ||
+       version>Number(state.incomingWhileSaving._sync?.version||0))state.incomingWhileSaving=incoming;
+    return;
+  }
   state.lastRevision=version;
   state.board=incoming;
+  state.remoteDrag=null;
+  if(state.selectedUid && !incoming.figures?.some(f=>f.uid===state.selectedUid)){
+    state.selectedUid=null;
+    state.editMode=false;
+  }
   renderFigures();
 }
+function applyDeferredBoard(){
+  if(!state.incomingWhileSaving || state.dragging || state.saving || state.pending)return;
+  const latest=state.incomingWhileSaving;
+  state.incomingWhileSaving=null;
+  receiveBoard(latest);
+}
 async function persist(){
-  if(state.saving||!state.session)return;
+  if(state.saving||!state.session || !state.pending)return;
   state.saving=true;
   try{
     while(state.pending && state.session){
@@ -275,16 +353,22 @@ async function persist(){
       const snapshot=state.board;
       const r=await db.rpc('cope_update_board',{p_id:state.session.id,p_board:snapshot});
       if(r.error)throw r.error;
-      if(r.data?.kind==='circles-belonging' && Number(r.data._sync?.version||0)>state.lastRevision) {
-        receiveBoard(r.data);
+      const stored=(r.data?.kind==='circles-belonging')?r.data:snapshot;
+      if(Number(stored._sync?.version||0)>state.lastRevision)receiveBoard(stored);
+      const broadcasted=await sendChannelEvent('board_snapshot',{board:stored});
+      // Si la otra pantalla aún no está, recibirá el último estado al incorporarse.
+      if(!broadcasted && state.connected){
+        $('connectionStatus').title='Cambio guardado, pero el mensaje no fue confirmado. Se reintentará al reconectar.';
       }
-      state.channel?.send({type:'broadcast',event:'board_snapshot',payload:{from:clientId,board:snapshot}})
-        .catch(()=>{});
     }
-  }catch(e){
-    state.pending=false;
-    alertError('No se ha podido guardar la composición: '+(e.message||'Error de red'),true);
-  }finally{state.saving=false;}
+  }catch(error){
+    state.pending=true;
+    alertError('No se ha podido guardar el cambio en el servidor: '+
+      (error.message||'Error de red')+'. El cambio sigue en esta pantalla; comprueba la conexión.',true);
+  }finally{
+    state.saving=false;
+    applyDeferredBoard();
+  }
 }
 function changeBoard(next){
   if(!canEditFigures())return;
@@ -315,6 +399,11 @@ function loadSession(row,role){
   state.selectedUid=null;
   state.selectedRing=0;
   state.infoRing=null;
+  state.members=[];
+  state.peerLastSeenAt=0;
+  state.pending=false;
+  state.saving=false;
+  state.incomingWhileSaving=null;
   clearError();
   refreshWorkspace();
   setupRealtime();
@@ -352,37 +441,110 @@ async function joinSession(event){
   }catch(e){alertError('No se ha podido acceder: '+(e.message||'Código incorrecto'));}
   finally{markBusy(false);}
 }
-function setupRealtime(){
+function stopRealtime(){
+  if(state.syncTimer){clearInterval(state.syncTimer);state.syncTimer=null;}
   if(state.channel){db.removeChannel(state.channel);state.channel=null;}
+  state.connected=false;
+  state.members=[];
+  state.peerLastSeenAt=0;
+  state.peerPresent=false;
+}
+function setupRealtime(){
+  stopRealtime();
   const session=state.session;
   if(!session?.id)return;
-  const channel=db.channel('circles-belonging-'+session.id)
+  // Ambos clientes, en redes o dispositivos diferentes, comparten un tema único
+  // en el servidor de Supabase. Los mensajes no dependen de la WiFi local.
+  const channel=db.channel('circles-belonging-'+session.id,{
+    config:{broadcast:{ack:true,self:false},presence:{key:clientId}}
+  })
     .on('postgres_changes',{event:'*',schema:'public',table:'cope_sessions',filter:'id=eq.'+session.id}, payload=>{
+      if(state.session?.id!==session.id)return;
       if(payload.eventType==='DELETE'){alertError('La sesión ha finalizado.',true);return;}
       if(payload.new?.board?.kind==='circles-belonging')receiveBoard(payload.new.board);
     })
+    .on('presence',{event:'sync'},()=>{
+      if(state.session?.id!==session.id)return;
+      state.members=Object.values(channel.presenceState()).flat();
+      updateConnectionStatus();
+      if(state.members.some(m=>m.role===peerRole() && m.clientId!==clientId))requestLatestBoard();
+    })
+    .on('broadcast',{event:'hello'},({payload})=>{
+      if(state.session?.id!==session.id)return;
+      markPeer(payload);
+      if(payload?.from!==clientId && payload?.role===peerRole()){
+        sendChannelEvent('hello_ack',{to:payload.from,knownVersion:state.lastRevision}).catch(()=>{});
+        if(Number(payload.knownVersion||0)<state.lastRevision){
+          sendChannelEvent('board_snapshot',{board:state.board,to:payload.from}).catch(()=>{});
+        }else if(Number(payload.knownVersion||0)>state.lastRevision)requestLatestBoard();
+      }
+    })
+    .on('broadcast',{event:'hello_ack'},({payload})=>{
+      if(state.session?.id!==session.id || (payload?.to && payload.to!==clientId))return;
+      markPeer(payload);
+      if(Number(payload?.knownVersion||0)>state.lastRevision)requestLatestBoard();
+    })
     .on('broadcast',{event:'board_snapshot'},({payload})=>{
+      if(state.session?.id!==session.id || (payload?.to && payload.to!==clientId))return;
+      markPeer(payload);
       if(payload?.from!==clientId)receiveBoard(payload?.board);
     })
     .on('broadcast',{event:'board_request'},({payload})=>{
-      if(payload?.from!==clientId && state.board.kind==='circles-belonging'){
-        channel.send({type:'broadcast',event:'board_snapshot',payload:{from:clientId,board:state.board}}).catch(()=>{});
+      if(state.session?.id!==session.id || payload?.from===clientId)return;
+      markPeer(payload);
+      if(state.board.kind==='circles-belonging' &&
+         state.lastRevision>Number(payload?.knownVersion||0) && !state.pending && !state.saving){
+        sendChannelEvent('board_snapshot',{board:state.board,to:payload.from}).catch(()=>{});
+      }
+      if(Number(payload?.knownVersion||0)>state.lastRevision)requestLatestBoard();
+    })
+    .on('broadcast',{event:'figure_move'},({payload})=>{
+      if(state.session?.id!==session.id || payload?.from===clientId)return;
+      markPeer(payload);
+      if(payload?.uid && Number.isFinite(payload.x) && Number.isFinite(payload.y)){
+        state.remoteDrag={uid:payload.uid,x:payload.x,y:payload.y};
+        if(!state.dragging)renderFigures();
       }
     })
-    .on('broadcast',{event:'session_closed'},({payload})=>{
-      if(payload?.from===clientId)return;
-      alertError('El psicólogo ha finalizado esta sesión.',true);
-      $('connectionStatus').textContent='Sesión finalizada';
+    .on('broadcast',{event:'figure_drop'},({payload})=>{
+      if(state.session?.id!==session.id || payload?.from===clientId)return;
+      markPeer(payload);
+      state.remoteDrag=null;
+      if(!state.dragging)renderFigures();
+      requestLatestBoard();
     })
-    .subscribe(async status=>{
+    .on('broadcast',{event:'session_closed'},({payload})=>{
+      if(state.session?.id!==session.id || payload?.from===clientId)return;
+      markPeer(payload);
+      alertError('El psicólogo ha finalizado esta sesión.',true);
+      state.connected=false;
+      updateConnectionStatus();
+    })
+    .subscribe(async(status,error)=>{
+      if(state.session?.id!==session.id)return;
       state.connected=status==='SUBSCRIBED';
-      $('connectionStatus').textContent=state.connected?'Conectado':'Sin conexión en directo';
-      $('connectionStatus').classList.toggle('connected',state.connected);
-      if(state.connected){
-        channel.send({type:'broadcast',event:'board_request',payload:{from:clientId}}).catch(()=>{});
+      updateConnectionStatus();
+      if(status==='SUBSCRIBED'){
+        if(state.pending)persist();
+        try {await channel.track({role:state.role,clientId});}
+        catch(e){state.connectionError=e.message||'Error al comunicar presencia';}
+        await sendChannelEvent('hello',{knownVersion:state.lastRevision});
+        requestLatestBoard();
+      }else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){
+        state.connectionError=error?.message || status;
+        updateConnectionStatus();
       }
     });
   state.channel=channel;
+  state.syncTimer=setInterval(()=>{
+    if(state.session?.id!==session.id)return;
+    updateConnectionStatus();
+    if(state.connected){
+      sendChannelEvent('hello',{knownVersion:state.lastRevision}).catch(()=>{});
+      requestLatestBoard();
+      if(state.pending && !state.saving)persist();
+    }
+  },12000);
 }
 async function exitSession(){
   if(!state.session||state.closing)return;
@@ -396,7 +558,7 @@ async function exitSession(){
       if(closed.error)throw closed.error;
       await state.channel?.send({type:'broadcast',event:'session_closed',payload:{from:clientId}}).catch(()=>{});
     }
-    if(state.channel){await db.removeChannel(state.channel);state.channel=null;}
+    stopRealtime();
     await db.auth.signOut();
     state.role='';state.session=null;state.board=freshBoard();state.selectedUid=null;state.connected=false;
     $('therapistPassword').value='';
@@ -558,6 +720,10 @@ function onBoardPointerMove(event){
   drag.moved=true;
   const nextPos=constrain(drag.x+point.x-drag.startX,drag.y+point.y-drag.startY);
   state.board={...state.board,figures:state.board.figures.map(f=>f.uid===drag.uid?{...f,...nextPos}:f)};
+  if(Date.now()-state.lastDragBroadcast>85 && state.connected){
+    state.lastDragBroadcast=Date.now();
+    sendChannelEvent('figure_move',{uid:drag.uid,...nextPos}).catch(()=>{});
+  }
   renderFigures();
 }
 function onBoardPointerUp(event){
@@ -572,7 +738,9 @@ function onBoardPointerUp(event){
       if(ringIndex>=0)selectRing(ringIndex);
     }
     changeBoard({...state.board});
+    sendChannelEvent('figure_drop',{uid:drag.uid}).catch(()=>{});
   } else renderFigures();
+  applyDeferredBoard();
 }
 function initializeEvents(){
   $('therapistForm').addEventListener('submit',createSession);
