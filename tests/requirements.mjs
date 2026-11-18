@@ -25,7 +25,7 @@ assert.ok(html.indexOf('id="editCard"') < html.indexOf('id="figureCatalog"'), 'E
 assert.match(js, /addEventListener\('dblclick'/, 'Editar el nombre con doble clic');
 assert.match(html, /id="questionsPanel" class="questions-panel professional-only"/, 'Preguntas exclusivas de la interfaz profesional');
 assert.match(js, /textPath href="#arc-/, 'Los nombres siguen sus franjas circulares');
-assert.match(html, /app\.js\?v=20261110-r4/, 'Se fuerza versión del JS');
+assert.match(html, /app\.js\?v=20261118-r5/, 'Se fuerza versión del JS');
 assert.match(css, /board-surface\{margin:0;width:100%;max-width:none/, 'Círculos ocupan el ancho del tablero');
 assert.match(html, /id="exportPngButton"/, 'Exportar PNG');
 assert.match(html, /id="exportPdfButton"/, 'Exportar PDF');
@@ -36,4 +36,9 @@ assert.match(html, /id="figureZone"/, 'Posición de cada muñeco visible en edit
 assert.match(js, /function figureOutside\(\)/, 'Se calculan lugares fuera de los círculos');
 assert.match(js, /return circleFor\(f\.x, f\.y\)/, 'Muñecos fuera no se clasifican como Seguridad');
 assert.doesNotMatch(js, /if\(index<0\)return;/, 'Soltar fuera no está bloqueado');
+assert.match(js, /presence:\{key:clientId\}/, 'Presencia del otro participante');
+assert.match(html, /id="peerStatus"/, 'Estado de conexión con la otra pantalla');
+assert.match(js, /knownVersion:state.lastRevision/, 'Recuperación de cambios perdidos');
+assert.match(js, /function sendChannelEvent\(/, 'Envíos con confirmación');
+assert.match(js, /sendChannelEvent\('figure_move'/, 'Arrastres transmitidos en vivo');
 console.log('OK: seis círculos anchos, 30 muñecos, edición compartida y colocación fuera de los círculos.');
