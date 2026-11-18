@@ -14,3 +14,5 @@
 /* Acceso directo a la zona exterior, igual para psicólogo y paciente. */
 #addOutsideFigure{margin-top:9px}
 #figureZone{margin:0 0 12px;color:#716a81;font-weight:600}
+
+.peer-status{border:1px solid #e2deeb;border-radius:30px;background:#faf9fd;padding:8px 12px;font-weight:650}.peer-status.connected{border-color:#b7d9c4;background:#f2fbf4;color:#36754a}.peer-status.waiting{color:#866b40;background:#fffaf1;border-color:#f1dfbd}
