@@ -17,6 +17,8 @@ jobs:
         run: npm install --no-save --no-audit --no-fund jsdom@26.1.0
       - name: Probar altas y cambios de nombre en ambas pantallas
         run: node tests/browser.mjs
+      - name: Dos clientes aislados y recuperación tras cortes
+        run: node tests/remote-sync.mjs
       - name: Comprobar sintaxis JavaScript
         run: node --check app.js
       - name: Verificar requisitos de interfaz
